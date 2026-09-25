@@ -1,0 +1,5 @@
+Repositorio en GitHub:
+https://github.com/BrandowBruslyXD/dashboard-diamantes-ucompensar
+
+Dashboard en Binder (la primera carga puede tardar unos minutos):
+https://mybinder.org/v2/gh/BrandowBruslyXD/dashboard-diamantes-ucompensar/HEAD?urlpath=proxy/8050/

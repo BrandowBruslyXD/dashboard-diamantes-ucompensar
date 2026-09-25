@@ -66,7 +66,7 @@ FUENTE = 'Inter, "Segoe UI", system-ui, sans-serif'
 
 def estilo(fig, alto=380, leyenda=True):
     fig.update_layout(
-        template='simple_white', height=alto, font=dict(family=FUENTE, size=13, color=C['texto2']),
+        template='simple_white', height=alto, separators=',.', font=dict(family=FUENTE, size=13, color=C['texto2']),
         paper_bgcolor=C['superficie'], plot_bgcolor=C['superficie'],
         margin=dict(l=60, r=20, t=40, b=50), showlegend=leyenda,
         legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0, title=None),
