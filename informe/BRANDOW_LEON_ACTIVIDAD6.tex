@@ -307,6 +307,9 @@ azul oscuro = mejor) y no con colores arbitrarios. Las comparaciones entre dos
 series (entrenamiento frente a validación, Ridge frente a Lasso) usan azul y
 naranja, un par que se distingue también con daltonismo. En los gráficos de
 barras, el gris es contexto y el azul marca lo que se debe mirar.
+\item \textbf{Tipografía.} Spectral, una serifa de libro, para títulos y
+cifras, que evoca un certificado de tasación; IBM Plex Sans para el texto y los
+controles, con números tabulares en indicadores y tablas.
 \item \textbf{Formato local.} Coma decimal y punto de miles en ejes, tablas y
 textos.
 \item \textbf{Rendimiento.} El gráfico de dispersión usa WebGL
@@ -391,6 +394,22 @@ cifra mal transcrita (el MAPE de M2), que se corrigió.
 se corrigieron: un eje truncado que exageraba diferencias mínimas (se cambió por
 un gráfico de puntos), etiquetas recortadas y separadores decimales en formato
 inglés.
+\item \textbf{Crítica de diseño y accesibilidad.} Una revisión heurística
+(heurísticas de Nielsen: 27/40 en la primera versión), un detector automático de
+antipatrones visuales y una auditoría con axe-core encontraron cinco problemas
+prioritarios, que se corrigieron:
+\begin{itemize}[leftmargin=0.8cm,itemsep=0.1em]
+\item las pestañas no se podían usar con teclado; ahora se recorren con Tab y las flechas;
+\item la página no declaraba el idioma;
+\item en el celular la tabla desbordaba la pantalla;
+\item los filtros vacíos dejaban gráficos rotos; ahora muestran un mensaje que dice qué hacer;
+\item algunos textos no alcanzaban el contraste AA.
+\end{itemize}
+Además, el resultado del tasador se rediseñó como un \emph{certificado de
+tasación} y se agregó una guía de las escalas gemológicas (Fair→Ideal, J→D,
+I1→IF) y de las métricas. Tras los cambios, axe no reporta fallos de contraste, y
+los avisos que quedan pertenecen a componentes internos de Dash (desplegables,
+deslizadores y paginación de la tabla).
 \end{itemize}
 
 \subsection{Manual de uso}

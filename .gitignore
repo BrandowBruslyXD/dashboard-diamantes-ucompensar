@@ -5,3 +5,4 @@ dash.log
 .DS_Store
 informe/*.aux
 informe/*.log
+.impeccable/

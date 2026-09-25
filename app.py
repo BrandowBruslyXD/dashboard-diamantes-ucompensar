@@ -42,6 +42,7 @@ for c, o in ORDEN.items():
 # el modelo final usa x, y, z y el usuario solo conoce el peso.
 POT = {d: np.polyfit(np.log(df.carat), np.log(df[d]), 1) for d in ('x', 'y', 'z')}
 
+PRIMA = {t: float(v) for t, v in zip(coef.termino, coef.efecto_pct)}
 final = iters.iloc[-1]
 m3 = iters[iters.nombre == 'M3'].iloc[0]
 m1 = iters[iters.nombre == 'M1'].iloc[0]
@@ -49,10 +50,14 @@ m1 = iters[iters.nombre == 'M1'].iloc[0]
 # ---------------------------------------------------------------- estilo (paleta validada, modo claro)
 C = {
     'fondo': '#f4f3f0', 'superficie': '#fcfcfb', 'borde': '#e4e2dc',
-    'texto': '#0b0b0b', 'texto2': '#52514e', 'tenue': '#8a887f',
+    'texto': '#0b0b0b', 'texto2': '#4a4945', 'tenue': '#6b6961',
     'azul': '#2a78d6', 'naranja': '#eb6834', 'aqua': '#1baf7a', 'gris': '#c9c7c0',
 }
 RAMPA = ['#86b6ef', '#6da7ec', '#5598e7', '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#104281']
+
+
+OSCUROS = {'#256abf', '#1c5cab', '#104281'}  # pasos de la rampa con contraste AA para texto blanco
+AA = {'#2a78d6': '#256abf'}  # el paso medio no alcanza 4,5:1 ni con blanco ni con negro: en texto se usa el vecino
 
 
 def rampa(n):
@@ -61,7 +66,9 @@ def rampa(n):
     return [RAMPA[i] for i in idx]
 
 
-FUENTE = 'Inter, "Segoe UI", system-ui, sans-serif'
+FUENTE = '"IBM Plex Sans", "Segoe UI", system-ui, sans-serif'
+# colores categóricos por atributo (paleta validada, slots 1-3)
+ATRIB = {'cut': '#1baf7a', 'color': '#eb6834', 'clarity': '#2a78d6'}
 
 
 def estilo(fig, alto=380, leyenda=True):
@@ -69,13 +76,22 @@ def estilo(fig, alto=380, leyenda=True):
         template='simple_white', height=alto, separators=',.', font=dict(family=FUENTE, size=13, color=C['texto2']),
         paper_bgcolor=C['superficie'], plot_bgcolor=C['superficie'],
         margin=dict(l=60, r=20, t=40, b=50), showlegend=leyenda,
-        legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0, title=None),
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0, title=None, itemsizing='constant'),
         hoverlabel=dict(bgcolor='white', font=dict(family=FUENTE, color=C['texto'])),
     )
     fig.update_traces(cliponaxis=False, selector=dict(type='bar'))
     fig.update_xaxes(gridcolor=C['borde'], linecolor=C['gris'], zeroline=False, showgrid=False)
     fig.update_yaxes(gridcolor=C['borde'], linecolor=C['gris'], zeroline=False, showgrid=True)
     return fig
+
+
+def vacia(texto, alto=380):
+    fig = go.Figure()
+    fig.add_annotation(text=texto, x=0.5, y=0.5, xref='paper', yref='paper', showarrow=False,
+                       font=dict(size=15, color=C['texto2']))
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    return estilo(fig, alto, leyenda=False)
 
 
 def usd(v):
@@ -90,8 +106,8 @@ def pct(v, d=1):
     return f'{v * 100:.{d}f}'.replace('.', ',') + ' %'
 
 
-def tarjeta(*hijos, **kw):
-    return html.Div(hijos, className='tarjeta', **kw)
+def tarjeta(*hijos, clase='', **kw):
+    return html.Div(hijos, className=f'tarjeta {clase}'.strip(), **kw)
 
 
 def kpi(valor, etiqueta, nota=''):
@@ -122,7 +138,7 @@ def fig_simpson_bruto():
         x=simpson.color, y=simpson.precio_medio_bruto, marker_color=rampa(7), marker_line_width=0,
         customdata=simpson.peso_medio,
         hovertemplate='Color %{x}<br>Precio medio: %{y:,.0f} USD<br>Peso medio: %{customdata:.2f} q<extra></extra>'))
-    fig.update_yaxes(title='Precio medio (USD)')
+    fig.update_yaxes(title='Precio medio (USD)', tickformat=',.0f')
     fig.update_xaxes(title='Color (J = peor → D = mejor)')
     return estilo(fig, 320, leyenda=False)
 
@@ -141,28 +157,33 @@ def fig_efectos():
     filas = coef[coef.termino.str.startswith('cat__')].copy()
     filas['var'] = filas.termino.str.extract(r'cat__(\w+)_')[0]
     filas['nivel'] = filas.termino.str.replace(r'cat__\w+?_', '', regex=True)
-    filas['etq'] = filas['var'].map(NOMBRE) + ': ' + filas['nivel']
-    filas = filas.sort_values('efecto_pct')
-    fig = go.Figure(go.Bar(
-        y=filas.etq, x=filas.efecto_pct, orientation='h', marker_color=C['azul'], marker_line_width=0,
-        hovertemplate='%{y}<br>%{x:.1f} % sobre el nivel base<extra></extra>'))
+    fig = go.Figure()
+    for var in ('cut', 'color', 'clarity'):
+        f = filas[filas['var'] == var]
+        fig.add_trace(go.Bar(
+            y=[[NOMBRE[var]] * len(f), list(f.nivel)], x=f.efecto_pct, orientation='h', name=NOMBRE[var],
+            marker_color=ATRIB[var], marker_line_width=0,
+            text=[f'+{v:.0f} %' for v in f.efecto_pct], textposition='outside',
+            hovertemplate=f'{NOMBRE[var]} ' + '%{y}<br>%{x:.1f} % sobre el peor nivel<extra></extra>'))
     fig.update_xaxes(title='Prima sobre el peor nivel de su atributo (%), a igual peso', showgrid=True)
-    fig.update_yaxes(showgrid=False)
-    return estilo(fig, 520, leyenda=False)
+    fig.update_yaxes(showgrid=False, autorange='reversed')
+    fig = estilo(fig, 560, leyenda=True)
+    fig.update_layout(margin=dict(r=56))
+    return fig
 
 
 # ---------------------------------------------------------------- layout
 def pestaña_historia():
     return html.Div([
         html.Div([
-            kpi(num(final.r2, 3).replace('0,', '0,'), 'R² en datos no vistos', f'M1 de la actividad 4: {num(m1.r2, 3)}'),
+            kpi(num(final.r2, 3), 'R² en datos no vistos', f'M1 de la actividad 4: {num(m1.r2, 3)}'),
             kpi(pct(final.mape), 'error típico por diamante', f'antes: {pct(m1.mape)}'),
             kpi(usd(final.rmse), 'RMSE en prueba', f'antes: {usd(m1.rmse)}'),
             kpi(f'{met["n_limpio"]:,}'.replace(',', '.'), 'diamantes analizados', f'{met["n_ceros"]} descartados por medidas en cero'),
         ], className='fila-kpi'),
         html.Div([
             tarjeta(
-                html.H3('El problema'),
+                html.H2('El problema'),
                 parrafo(f"""Una joyería que compra y vende diamantes necesita **fijar un precio justo a partir de
 los atributos del catálogo** —peso, corte, color y pureza— sin depender del olfato de un tasador.
 En la práctica 2 una recta con el peso explicaba el 85 % del precio pero **predecía precios negativos**
@@ -173,7 +194,7 @@ La pregunta de esta etapa: **¿qué modelo valora un diamante con un error que u
 aprendemos del mercado al construirlo?**"""),
             ),
             tarjeta(
-                html.H3('Qué cambió el modelo, iteración por iteración'),
+                html.H2('Qué cambió el modelo, iteración por iteración'),
                 dcc.Graph(figure=fig_evolucion(), config={'displayModeBar': False}),
                 parrafo(f"""El salto grande **no vino de un algoritmo más sofisticado sino de mirar bien el problema**:
 el precio crece de forma multiplicativa, así que modelar **log(precio) ~ log(peso)** más las categóricas (M3)
@@ -182,20 +203,53 @@ El gradient boosting (M5) captura las interacciones restantes y deja el error en
             ),
         ], className='rejilla-2'),
         tarjeta(
-            html.H3('Tres hallazgos para el negocio'),
+            html.H2('Tres hallazgos para el negocio'),
             html.Div([
                 html.Div([html.Div('1', className='num'), parrafo(
                     f"""**El peso manda, y no linealmente.** Un 1 % más de peso sube el precio
 ≈ **{num(met['elasticidad_peso'], 2)} %** (elasticidad de M3). Duplicar el peso multiplica el precio por ≈ {num(2 ** met['elasticidad_peso'], 1)}.""")]),
                 html.Div([html.Div('2', className='num'), parrafo(
-                    """**El color sí se paga, aunque el promedio diga lo contrario.** En bruto un diamante D
-vale menos que uno J, porque los J son más grandes. A igual peso, corte y pureza, **D vale ≈ 67 % más que J**.""")]),
+                    f"""**El color sí se paga, aunque el promedio diga lo contrario.** En bruto un diamante D
+vale menos que uno J, porque los J son más grandes. A igual peso, corte y pureza, **D vale ≈ {PRIMA['cat__color_D']:.0f} % más que J**.""")]),
                 html.Div([html.Div('3', className='num'), parrafo(
-                    f"""**La pureza pesa más que el corte.** Pasar de I1 a IF triplica el precio (+208 %);
-el mejor corte frente al peor solo suma ≈ 18 %. Para el comprador, el corte es donde se ahorra.""")]),
+                    f"""**La pureza pesa más que el corte.** Pasar de I1 a IF triplica el precio (+{PRIMA['cat__clarity_IF']:.0f} %);
+el mejor corte frente al peor solo suma ≈ {PRIMA['cat__cut_Ideal']:.0f} %. Para el comprador, el corte es donde se ahorra.""")]),
             ], className='hallazgos'),
         ),
+        guia(),
     ])
+
+
+def escala(var, peor, mejor):
+    niveles = ORDEN[var]
+    return html.Div([
+        html.Div(NOMBRE[var], className='escala-nombre'),
+        html.Ol([html.Li(nv, style={'background': c, 'color': '#fff' if c in OSCUROS else C['texto']})
+                 for nv, c in zip(niveles, [AA.get(c, c) for c in rampa(len(niveles))])], className='escala-pasos'),
+        html.Div([html.Span(peor), html.Span(mejor)], className='escala-extremos'),
+    ], className='escala')
+
+
+def guia():
+    return tarjeta(
+        html.H2('Cómo leer las escalas y las métricas'),
+        html.Div([
+            html.Div([
+                escala('cut', 'Fair: talla pobre, pierde brillo', 'Ideal: proporciones óptimas'),
+                escala('color', 'J: matiz amarillo visible', 'D: incoloro'),
+                escala('clarity', 'I1: inclusiones visibles', 'IF: sin inclusiones internas'),
+            ], className='escalas'),
+            html.Dl([
+                html.Dt('MAPE'), html.Dd('Error porcentual medio por diamante: la métrica de negocio del proyecto.'),
+                html.Dt('R²'), html.Dd('Fracción de la variación del precio que explica el modelo (1 = perfecto). '
+                                       'En la pestaña 4 se mide sobre log(precio), por eso da ≈ 0,99; en dólares es '
+                                       f'{num(final.r2, 3)}.'),
+                html.Dt('RMSE'), html.Dd('Error cuadrático medio en dólares: castiga más los errores grandes.'),
+                html.Dt('Prueba'), html.Dd(f'{met["n_prueba"]:,} diamantes que el modelo nunca vio al entrenar.'.replace(',', '.')),
+            ], className='glosario'),
+        ], className='guia'),
+        clase='guia-tarjeta',
+    )
 
 
 def pestaña_explorar():
@@ -210,7 +264,8 @@ def pestaña_explorar():
                                              {'label': 'Logarítmica', 'value': 'log'}],
                     value='log', inline=True, className='radio')], className='control'),
                 html.Div([html.Label('Corte'), dcc.Dropdown(
-                    id='ex-cut', options=ORDEN['cut'], value=ORDEN['cut'], multi=True)], className='control ancho'),
+                    id='ex-cut', options=ORDEN['cut'], value=ORDEN['cut'], multi=True,
+                    placeholder='Elige al menos un corte…')], className='control ancho'),
             ], className='filtros'),
             html.Div([
                 html.Div([html.Label('Rango de peso (quilates)'), dcc.RangeSlider(
@@ -221,8 +276,8 @@ def pestaña_explorar():
             html.Div(id='ex-resumen', className='resumen'),
         ),
         html.Div([
-            tarjeta(html.H3('Precio frente a peso'), dcc.Graph(id='ex-disp', config={'displayModeBar': False})),
-            tarjeta(html.H3(id='ex-caja-titulo'), dcc.Graph(id='ex-caja', config={'displayModeBar': False})),
+            tarjeta(html.H2('Precio frente a peso'), dcc.Graph(id='ex-disp', config={'displayModeBar': False})),
+            tarjeta(html.H2(id='ex-caja-titulo'), dcc.Graph(id='ex-caja', config={'displayModeBar': False})),
         ], className='rejilla-2'),
         tarjeta(parrafo("""**Cómo leerlo.** En escala logarítmica la nube se vuelve una banda recta: esa es la evidencia
 que justificó la transformación log-log de M3. Dentro de la banda, las capas por pureza o color están ordenadas —a igual peso,
@@ -234,26 +289,26 @@ peor calidad tienden a ser más grandes. Esa es la paradoja que explica la pesta
 def pestaña_paradoja():
     return html.Div([
         html.Div([
-            tarjeta(html.H3('Lo que dicen los promedios'), dcc.Graph(figure=fig_simpson_bruto(), config={'displayModeBar': False}),
+            tarjeta(html.H2('Lo que dicen los promedios'), dcc.Graph(figure=fig_simpson_bruto(), config={'displayModeBar': False}),
                     parrafo('El mejor color (D) aparenta ser **más barato** que el peor (J). Tomar esto literalmente llevaría a sobrevalorar los J.')),
-            tarjeta(html.H3('Lo que dice el modelo (a igual peso, corte y pureza)'),
+            tarjeta(html.H2('Lo que dice el modelo (a igual peso, corte y pureza)'),
                     dcc.Graph(figure=fig_simpson_ajustado(), config={'displayModeBar': False}),
                     parrafo('Al controlar los confusores, el orden se endereza y es monótono: cada escalón de color suma prima.')),
         ], className='rejilla-2'),
         tarjeta(
-            html.H3('Compruébalo tú: compara dos colores dentro de una misma banda de peso'),
+            html.H2('Compruébalo tú: compara dos colores dentro de una misma banda de peso'),
             html.Div([
                 html.Div([html.Label('Color A'), dcc.Dropdown(id='sp-a', options=ORDEN['color'], value='D', clearable=False)], className='control'),
                 html.Div([html.Label('Color B'), dcc.Dropdown(id='sp-b', options=ORDEN['color'], value='J', clearable=False)], className='control'),
                 html.Div([html.Label('Banda de peso (quilates)'), dcc.RangeSlider(
-                    id='sp-banda', min=0.2, max=2.5, step=0.05, value=[0.3, 0.5],
-                    marks={v: f'{v:g}'.replace('.', ',') for v in [0.2, 0.5, 1, 1.5, 2, 2.5]}, tooltip={'placement': 'bottom'})], className='control ancho'),
+                    id='sp-banda', min=0.2, max=2.5, step=0.05, value=[0.3, 0.5], allowCross=False, pushable=0.05,
+                    marks={v: f'{v:g}'.replace('.', ',') for v in [0.5, 1, 1.5, 2, 2.5]}, tooltip={'placement': 'bottom'})], className='control ancho'),
             ], className='filtros'),
             html.Div(id='sp-texto', className='resumen'),
             dcc.Graph(id='sp-fig', config={'displayModeBar': False}),
         ),
         tarjeta(
-            html.H3('Cuánto paga el mercado por cada atributo (modelo M3, a igual peso)'),
+            html.H2('Cuánto paga el mercado por cada atributo (modelo M3, a igual peso)'),
             dcc.Graph(figure=fig_efectos(), config={'displayModeBar': False}),
             parrafo('La pureza domina: pasar de I1 a IF triplica el precio. El corte es el atributo que menos mueve el precio.'),
         ),
@@ -278,7 +333,7 @@ def pestaña_experimentos():
             ], className='xp'),
         ),
         tarjeta(
-            html.H3('Predicho frente a real en el conjunto de prueba'),
+            html.H2('Predicho frente a real en el conjunto de prueba'),
             html.Div([html.Div([html.Label('Modelo'), dcc.RadioItems(
                 id='rs-mod', value='pred_final', inline=True, className='radio',
                 options=[{'label': 'M3 (log-lineal)', 'value': 'pred_m3'},
@@ -297,23 +352,24 @@ def pestaña_tasador():
     return html.Div([
         html.Div([
             tarjeta(
-                html.H3('Tasador'),
+                html.H2('Tasador'),
                 parrafo('Describe la piedra y el modelo final estima su precio con un intervalo del 80 %.'),
-                html.Label('Peso (quilates)'),
-                dcc.Slider(id='ts-peso', min=0.2, max=3.0, step=0.01, value=1.0,
-                           marks={v: f'{v:g}'.replace('.', ',') for v in [0.2, 0.5, 1, 1.5, 2, 2.5, 3]}, tooltip={'placement': 'bottom'}),
+                html.Div([html.Label('Peso (quilates)'),
+                          dcc.Slider(id='ts-peso', min=0.2, max=5.0, step=0.01, value=1.0,
+                                     marks={v: f'{v:g}'.replace('.', ',') for v in [0.2, 1, 2, 3, 4, 5]},
+                                     tooltip={'placement': 'bottom'})], className='control'),
                 html.Div([selector('ts-cut', 'cut'), selector('ts-color', 'color'), selector('ts-clarity', 'clarity')],
                          className='filtros'),
                 html.Div(id='ts-resultado'),
             ),
             tarjeta(
-                html.H3('¿Qué pasa si cambio un atributo?'),
+                html.H2('¿Qué pasa si cambio un atributo?'),
                 dcc.Graph(id='ts-fig', config={'displayModeBar': False}),
                 parrafo('Cada barra es el precio estimado moviendo **solo** ese atributo al nivel indicado; lo demás queda como lo elegiste.'),
             ),
         ], className='rejilla-2'),
         tarjeta(
-            html.H3('Detector de oportunidades'),
+            html.H2('Detector de oportunidades'),
             parrafo(f"""Diamantes del conjunto de prueba (que el modelo **nunca vio**) cuyo precio de lista está muy por debajo
 de lo que su combinación de atributos vale en el mercado. Para una joyería compradora es una lista de revisión; para una
 vendedora, una alerta de precios mal fijados. El intervalo del 80 % del modelo es ±10 %, así que desvíos mayores son inusuales. Los desvíos extremos (más del 50 %)
@@ -324,37 +380,44 @@ merecen revisión manual: pueden ser gangas o errores de captura en el catálogo
                     marks={v: f'{v // 1000}k' for v in [1000, 5000, 10000, 15000, 19000]}, tooltip={'placement': 'bottom'})],
                     className='control ancho'),
                 html.Div([html.Label('Descuento mínimo frente al modelo'), dcc.Slider(
-                    id='op-desc', min=10, max=50, step=5, value=20, marks={v: f'{v} %' for v in range(10, 51, 10)})],
+                    id='op-desc', min=10, max=50, step=5, value=20, marks={v: f'{v}\u00a0%' for v in range(10, 51, 10)})],
                     className='control ancho'),
             ], className='filtros'),
             html.Div(id='op-resumen', className='resumen'),
             dash_table.DataTable(
                 id='op-tabla', page_size=10, sort_action='native',
                 style_as_list_view=True, locale_format={'decimal': ',', 'group': '.'},
+                style_table={'overflowX': 'auto', 'minWidth': '100%'},
                 style_header={'fontWeight': '600', 'backgroundColor': C['fondo'], 'color': C['texto'], 'border': 'none'},
                 style_cell={'fontFamily': FUENTE, 'fontSize': 13, 'padding': '8px 10px', 'color': C['texto'],
-                            'backgroundColor': C['superficie'], 'textAlign': 'right'},
+                            'backgroundColor': C['superficie'], 'textAlign': 'right',
+                            'fontVariantNumeric': 'tabular-nums', 'whiteSpace': 'nowrap'},
                 style_cell_conditional=[{'if': {'column_id': c}, 'textAlign': 'left'} for c in ('cut', 'color', 'clarity')],
             ),
         ),
+        html.Section([
+            html.H2('En una frase'),
+            html.P(f'Con cuatro atributos del catálogo, el modelo tasa un diamante con {pct(final.mape)} de error típico: '
+                   'suficiente para fijar un primer precio y para detectar, en segundos, las piedras que el mercado tiene mal valoradas.'),
+        ], className='cierre'),
     ])
 
 
 PREFIJO = os.environ.get('DASH_PREFIX', '/')
 app = Dash(__name__, title='¿Cuánto vale un diamante?', requests_pathname_prefix=PREFIJO, routes_pathname_prefix='/')
 server = app.server
+app.index_string = app.index_string.replace('<html>', '<html lang="es">')
 
 app.layout = html.Div([
     html.Header([
         html.Div([
-            html.Div('Programación para Ciencia de Datos II · Proyecto final', className='sobretitulo'),
             html.H1('¿Cuánto vale un diamante?'),
-            html.P('Un modelo de valoración para 53.920 piedras: de una recta que predecía precios negativos a un '
-                   'tasador con 6,5 % de error típico.', className='bajada'),
+            html.P(f'Un modelo de valoración para {met["n_limpio"]:,} piedras: de una recta que predecía precios negativos '
+                   f'a un tasador con {pct(final.mape)} de error típico.'.replace(',', '.', 1), className='bajada'),
         ], className='contenedor'),
     ], className='cabecera'),
     html.Main([
-        dcc.Tabs(id='pestanas', value='historia', className='pestanas', children=[
+        dcc.Tabs(id='pestanas', value='historia', className='pestanas', mobile_breakpoint=0, children=[
             dcc.Tab(label='1 · La historia', value='historia', children=pestaña_historia()),
             dcc.Tab(label='2 · Explorar el catálogo', value='explorar', children=pestaña_explorar()),
             dcc.Tab(label='3 · La paradoja del color', value='paradoja', children=pestaña_paradoja()),
@@ -362,7 +425,7 @@ app.layout = html.Div([
             dcc.Tab(label='5 · Tasador y oportunidades', value='tasador', children=pestaña_tasador()),
         ]),
     ], className='contenedor'),
-    html.Footer(html.Div('Brandow Brusly León Rodríguez · Fundación Universitaria Compensar · Datos: diamonds (ggplot2), '
+    html.Div(html.Div('Programación para Ciencia de Datos II · Brandow Brusly León Rodríguez · Fundación Universitaria Compensar · Datos: diamonds (ggplot2), '
                          '53.940 referencias · Partición 70-30, semilla 42', className='contenedor'), className='pie'),
 ])
 
@@ -378,6 +441,9 @@ def filtrar(cortes, peso):
               Input('ex-color', 'value'), Input('ex-escala', 'value'), Input('ex-cut', 'value'), Input('ex-peso', 'value'))
 def explorar(var, escala, cortes, peso):
     d = filtrar(cortes, peso)
+    if d.empty:
+        msg = 'Sin diamantes para este filtro: elige al menos un corte o amplía el rango de peso.'
+        return vacia(msg, 420), vacia(msg, 420), f'Distribución del precio por {NOMBRE[var].lower()}', msg
     niveles = ORDEN[var]
     colores = dict(zip(niveles, rampa(len(niveles))))
     muestra = d.sample(min(len(d), 12000), random_state=1) if len(d) else d
@@ -389,7 +455,7 @@ def explorar(var, escala, cortes, peso):
             marker=dict(size=5, color=colores[nv], opacity=0.55, line=dict(width=0)),
             hovertemplate=f'{NOMBRE[var]} {nv}<br>%{{x:.2f}} q · %{{y:,.0f}} USD<extra></extra>'))
     disp.update_xaxes(title='Peso (quilates)', type=escala)
-    disp.update_yaxes(title='Precio (USD)', type=escala)
+    disp.update_yaxes(title='Precio (USD)', type=escala, tickformat=',.0f')
     if escala == 'log':
         disp.update_xaxes(tickvals=[0.2, 0.3, 0.5, 1, 2, 3, 5], ticktext=['0,2', '0,3', '0,5', '1', '2', '3', '5'])
         disp.update_yaxes(tickvals=[300, 1000, 3000, 10000, 18000], ticktext=['300', '1.000', '3.000', '10.000', '18.000'])
@@ -397,7 +463,7 @@ def explorar(var, escala, cortes, peso):
     for nv in niveles:
         s = d[d[var] == nv]
         caja.add_trace(go.Box(y=s.price, name=nv, marker_color=colores[nv], boxpoints=False, line=dict(width=1.5)))
-    caja.update_yaxes(title='Precio (USD)', type=escala)
+    caja.update_yaxes(title='Precio (USD)', type=escala, tickformat=',.0f')
     if escala == 'log':
         caja.update_yaxes(tickvals=[300, 1000, 3000, 10000, 18000], ticktext=['300', '1.000', '3.000', '10.000', '18.000'])
     caja.update_xaxes(title=f'{NOMBRE[var]} (peor → mejor)')
@@ -406,8 +472,6 @@ def explorar(var, escala, cortes, peso):
                    html.B(usd(d.price.median())), ' · peso mediano ', html.B(f'{d.carat.median():.2f} q'.replace('.', ','))]
         if len(d) > len(muestra):
             resumen.append(f' · el gráfico de dispersión muestra {len(muestra):,} al azar para mantenerse fluido'.replace(',', '.'))
-    else:
-        resumen = 'Ningún diamante cumple el filtro: amplía el rango de peso o agrega cortes.'
     return (estilo(disp, 420), estilo(caja, 420, leyenda=False),
             f'Distribución del precio por {NOMBRE[var].lower()}, sin controlar el peso', resumen)
 
@@ -415,14 +479,19 @@ def explorar(var, escala, cortes, peso):
 @app.callback(Output('sp-fig', 'figure'), Output('sp-texto', 'children'),
               Input('sp-a', 'value'), Input('sp-b', 'value'), Input('sp-banda', 'value'))
 def paradoja(a, b, banda):
+    if a == b:
+        return vacia('Elige dos colores distintos para compararlos.', 320), 'Elige dos colores distintos.'
     d = df[df.carat.between(*banda) & df.color.isin([a, b])]
+    if (d.color == a).sum() < 5 or (d.color == b).sum() < 5:
+        msg = f'Hay menos de 5 diamantes de color {a} o {b} entre {num(banda[0], 2)} y {num(banda[1], 2)} q: amplía la banda.'
+        return vacia(msg, 320), msg
     fig = go.Figure()
     for col, color in ((a, C['azul']), (b, C['naranja'])):
         s = d[d.color == col]
         fig.add_trace(go.Histogram(x=s.price, name=f'Color {col} (n={len(s):,})'.replace(',', '.'),
                                    marker_color=color, opacity=0.6, nbinsx=40, histnorm='percent'))
     fig.update_layout(barmode='overlay')
-    fig.update_xaxes(title='Precio (USD)')
+    fig.update_xaxes(title='Precio (USD)', tickformat=',.0f')
     fig.update_yaxes(title='% de diamantes del color')
     pa, pb = d[d.color == a].price, d[d.color == b].price
     if len(pa) < 5 or len(pb) < 5:
@@ -446,9 +515,9 @@ def experimentos(sel):
                                  line=dict(color=C['azul'], width=2), marker=dict(size=8),
                                  error_y=dict(type='data', array=prof.r2_cv_std, color=C['azul'], thickness=1)))
         fig.add_vline(x=met['mejor_max_depth'], line_dash='dot', line_color=C['tenue'],
-                      annotation_text=f'elegida: {met["mejor_max_depth"]}', annotation_position='top left')
+                      annotation_text=f'elegida: {met["mejor_max_depth"]}', annotation_position='bottom right')
         fig.update_xaxes(title='max_depth (profundidad de cada árbol)')
-        fig.update_yaxes(title='R² sobre log(precio)')
+        fig.update_yaxes(title='R² sobre log(precio), no en USD')
         f = prof.set_index('max_depth')
         texto = f"""**Hiperparámetro: profundidad de los árboles.** La validación mejora rápido hasta 4 y después se aplana
 (de {num(f.r2_cv[6])} en 6 a {num(f.r2_cv[12])} en 12), mientras la brecha entrenamiento–validación sigue
@@ -516,7 +585,7 @@ def residuos(col):
                                marker=dict(size=4, color=C['azul'], opacity=0.3),
                                hovertemplate='predicho %{x:,.0f} · real %{y:,.0f} USD<extra></extra>'))
     lim = [300, 19000]
-    fig.add_trace(go.Scatter(x=lim, y=lim, mode='lines', name='Predicción perfecta', line=dict(color=C['texto'], width=1.5, dash='dash')))
+    fig.add_trace(go.Scattergl(x=lim, y=lim, mode='lines', name='Predicción perfecta', line=dict(color=C['texto'], width=2, dash='dash')))
     fila = iters.iloc[-1] if col == 'pred_final' else m3
     ticks = dict(tickvals=[300, 1000, 3000, 10000, 18000], ticktext=['300', '1.000', '3.000', '10.000', '18.000'])
     fig.update_xaxes(title='Precio predicho (USD, escala log)', type='log', **ticks)
@@ -547,12 +616,18 @@ def tasador(peso, cut, color, clarity):
     p = tasar([base])[0]
     lo, hi = p * np.exp(mod['q10']), p * np.exp(mod['q90'])
     p3 = float(np.exp(mod['m3'].predict(pd.DataFrame([base])[mod['cols_m3']]))[0])
+    fila = lambda k, v: html.Div([html.Dt(k), html.Dd(v)], className='cert-fila')
     resultado = html.Div([
-        html.Div(usd(p), className='precio'),
-        html.Div(f'Intervalo del 80 %: {usd(lo)} – {usd(hi)}', className='intervalo'),
-        html.Div(f'Modelo interpretable M3: {usd(p3)} · medidas x, y, z estimadas a partir del peso '
-                 f'({num(base["x"], 2)} × {num(base["y"], 2)} × {num(base["z"], 2)} mm)', className='kpi-nota'),
-    ], className='caja-precio')
+        html.Div([html.Span('Certificado de tasación'), html.Span('Modelo M5 · 80 % de confianza')], className='cert-cabecera'),
+        html.Dl([
+            fila('Peso', f'{num(peso, 2)} q'),
+            fila('Corte', cut), fila('Color', color), fila('Pureza', clarity),
+            fila('Medidas estimadas', f'{num(base["x"], 2)} × {num(base["y"], 2)} × {num(base["z"], 2)} mm'),
+        ], className='cert-datos'),
+        html.Div([html.Div('Valor estimado', className='cert-etiqueta'), html.Div(usd(p), className='precio')], className='cert-valor'),
+        html.Div(f'Entre {usd(lo)} y {usd(hi)} en 8 de cada 10 casos', className='intervalo'),
+        html.Div(f'Contraste con el modelo interpretable M3: {usd(p3)}', className='kpi-nota'),
+    ], className='certificado')
     # sensibilidad: mover un atributo a la vez
     filas, etiquetas, grupos = [], [], []
     for var, actual in (('cut', cut), ('color', color), ('clarity', clarity)):
@@ -571,7 +646,7 @@ def tasador(peso, cut, color, clarity):
         fig.add_trace(go.Bar(x=[[NOMBRE[var]] * n, ORDEN[var]], y=precios[i:i + n], marker_color=cols, marker_line_width=0,
                              name=NOMBRE[var], hovertemplate='%{x}<br>%{y:,.0f} USD<extra></extra>'))
         i += n
-    fig.update_yaxes(title='Precio estimado (USD)')
+    fig.update_yaxes(title='Precio estimado (USD)', tickformat=',.0f')
     fig.update_xaxes(tickangle=-45)
     return resultado, estilo(fig, 420, leyenda=False)
 
@@ -583,6 +658,9 @@ def oportunidades(presu, desc):
     cols = [('carat', 'Peso (q)'), ('cut', 'Corte'), ('color', 'Color'), ('clarity', 'Pureza'),
             ('price', 'Precio lista (USD)'), ('pred_final', 'Valor modelo (USD)'), ('desvio_pct', 'Desvío (%)')]
     total = (pred.price <= presu).sum()
+    if d.empty:
+        return [], [{'name': n, 'id': c} for c, n in cols], (f'Ningún diamante de hasta {usd(presu)} está {desc} % o más por '
+                                                              'debajo de su valor: sube el presupuesto o baja el descuento mínimo.')
     resumen = [html.B(f'{len(d):,}'.replace(',', '.')), f' de {total:,} diamantes dentro del presupuesto'.replace(',', '.'),
                f' ({len(d) / max(total, 1) * 100:.1f} %) están al menos {desc} % por debajo de su valor estimado.'.replace('.', ',', 1)]
     return (d[[c for c, _ in cols]].round(2).to_dict('records'),
