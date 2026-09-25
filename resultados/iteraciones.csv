@@ -1,0 +1,7 @@
+r2,rmse,mape,r2_entreno,brecha_r2,nombre,descripcion,negativos,alfa,max_depth
+0.8541,1508.5811,0.3774,0.8474,-0.0067,M0,Recta precio ~ peso (Práctica 2),462,,
+0.8587,1484.1939,0.3798,0.8516,-0.0072,M1,"Múltiple con continuas: peso, profundidad, tabla (Actividad 4)",894,,
+0.9194,1121.3119,0.4405,0.9144,-0.0049,M2,"Peso + corte + color + pureza (one-hot), escala USD",1452,,
+0.9612,777.531,0.1043,0.9594,-0.0018,M3,log(precio) ~ log(peso) + categóricas,0,,
+0.9655,733.1862,0.0954,0.9673,0.0018,M4,M3 + interacciones de grado 2 + Ridge (α=3.16 por CV 5-fold y regla 1-EE),0,3.1622776601683795,
+0.9816,535.2499,0.0654,0.9863,0.0047,M5,"Gradient boosting sobre log(precio), max_depth=6 por CV y regla 1-EE",0,,6.0

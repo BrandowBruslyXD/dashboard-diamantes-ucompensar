@@ -1,0 +1,6 @@
+#!/bin/bash
+# Binder: lanza el dashboard en segundo plano y lo expone vía jupyter-server-proxy
+# en  <servidor>/proxy/8050/
+export DASH_PREFIX="${JUPYTERHUB_SERVICE_PREFIX:-/}proxy/8050/"
+nohup python app.py > dash.log 2>&1 &
+exec "$@"

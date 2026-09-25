@@ -1,0 +1,4 @@
+experimento,r2,rmse,mape
+M3 (sin volumen),0.9612,777.531,0.1043
+"M3 + log(volumen), ceros imputados con mediana",0.9592,797.6865,0.1047
+"M3 + log(volumen), 20 registros con ceros eliminados",0.9613,776.4381,0.1043

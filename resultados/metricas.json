@@ -1,0 +1,100 @@
+{
+  "n_crudo": 53940,
+  "n_ceros": 20,
+  "n_limpio": 53920,
+  "n_entreno": 37744,
+  "n_prueba": 16176,
+  "iteraciones": [
+    {
+      "r2": 0.8541,
+      "rmse": 1508.5811,
+      "mape": 0.3774,
+      "r2_entreno": 0.8474,
+      "brecha_r2": -0.0067,
+      "nombre": "M0",
+      "descripcion": "Recta precio ~ peso (Práctica 2)",
+      "negativos": 462
+    },
+    {
+      "r2": 0.8587,
+      "rmse": 1484.1939,
+      "mape": 0.3798,
+      "r2_entreno": 0.8516,
+      "brecha_r2": -0.0072,
+      "nombre": "M1",
+      "descripcion": "Múltiple con continuas: peso, profundidad, tabla (Actividad 4)",
+      "negativos": 894
+    },
+    {
+      "r2": 0.9194,
+      "rmse": 1121.3119,
+      "mape": 0.4405,
+      "r2_entreno": 0.9144,
+      "brecha_r2": -0.0049,
+      "nombre": "M2",
+      "descripcion": "Peso + corte + color + pureza (one-hot), escala USD",
+      "negativos": 1452
+    },
+    {
+      "r2": 0.9612,
+      "rmse": 777.531,
+      "mape": 0.1043,
+      "r2_entreno": 0.9594,
+      "brecha_r2": -0.0018,
+      "nombre": "M3",
+      "descripcion": "log(precio) ~ log(peso) + categóricas",
+      "negativos": 0
+    },
+    {
+      "r2": 0.9655,
+      "rmse": 733.1862,
+      "mape": 0.0954,
+      "r2_entreno": 0.9673,
+      "brecha_r2": 0.0018,
+      "nombre": "M4",
+      "descripcion": "M3 + interacciones de grado 2 + Ridge (α=3.16 por CV 5-fold y regla 1-EE)",
+      "negativos": 0,
+      "alfa": 3.1622776601683795
+    },
+    {
+      "r2": 0.9816,
+      "rmse": 535.2499,
+      "mape": 0.0654,
+      "r2_entreno": 0.9863,
+      "brecha_r2": 0.0047,
+      "nombre": "M5",
+      "descripcion": "Gradient boosting sobre log(precio), max_depth=6 por CV y regla 1-EE",
+      "negativos": 0,
+      "max_depth": 6
+    }
+  ],
+  "mejor_alfa_ridge": 3.1622776601683795,
+  "mejor_max_depth": 6,
+  "elasticidad_peso": 1.8831,
+  "intervalo_80_log": [
+    -0.1026,
+    0.1013
+  ],
+  "cobertura_80_prueba": 0.8,
+  "calidad_datos": [
+    {
+      "experimento": "M3 (sin volumen)",
+      "r2": 0.9612,
+      "rmse": 777.531,
+      "mape": 0.1043
+    },
+    {
+      "experimento": "M3 + log(volumen), ceros imputados con mediana",
+      "r2": 0.9592,
+      "rmse": 797.6865,
+      "mape": 0.1047
+    },
+    {
+      "experimento": "M3 + log(volumen), 20 registros con ceros eliminados",
+      "r2": 0.9613,
+      "rmse": 776.4381,
+      "mape": 0.1043
+    }
+  ],
+  "segundos": 192.7
+}

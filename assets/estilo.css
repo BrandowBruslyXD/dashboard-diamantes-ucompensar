@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --fondo: #f4f3f0; --superficie: #fcfcfb; --borde: #e4e2dc;
+  --texto: #0b0b0b; --texto2: #52514e; --tenue: #8a887f; --azul: #2a78d6; --azul-osc: #104281;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font-family: Inter, "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.55; }
+.contenedor { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+.cabecera { background: var(--azul-osc); color: #fff; padding: 36px 0 30px; }
+.cabecera h1 { font-size: 34px; margin: 4px 0 8px; font-weight: 700; letter-spacing: -0.02em; }
+.sobretitulo { text-transform: uppercase; font-size: 12px; letter-spacing: .08em; color: #cde2fb; }
+.bajada { margin: 0; color: #cde2fb; font-size: 17px; max-width: 760px; }
+.pestanas { margin: 22px 0 18px; }
+.pestanas .tab { border: none !important; background: transparent !important; color: var(--texto2); font-weight: 500; padding: 10px 14px !important; border-bottom: 2px solid var(--borde) !important; }
+.pestanas .tab--selected { color: var(--azul-osc) !important; border-bottom: 3px solid var(--azul) !important; font-weight: 600; }
+.tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 20px 22px; margin-bottom: 18px; }
+.tarjeta h3 { margin: 0 0 10px; font-size: 17px; font-weight: 600; }
+.rejilla-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.rejilla-2 > .tarjeta { margin-bottom: 18px; }
+.fila-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 18px; }
+.kpi { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 18px 20px; }
+.kpi-valor { font-size: 30px; font-weight: 700; color: var(--azul-osc); letter-spacing: -0.02em; }
+.kpi-etiqueta { font-weight: 500; color: var(--texto); }
+.kpi-nota { color: var(--tenue); font-size: 13px; margin-top: 4px; }
+.narrativa p { margin: 0 0 10px; color: var(--texto2); }
+.narrativa strong { color: var(--texto); }
+.hallazgos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.hallazgos > div { display: flex; gap: 12px; }
+.hallazgos .num { flex: 0 0 32px; height: 32px; border-radius: 50%; background: var(--azul); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.filtros { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-bottom: 12px; align-items: flex-end; }
+.control { min-width: 160px; }
+.control.ancho { flex: 1 1 320px; }
+.control label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--texto2); margin-bottom: 6px; }
+.radio label { display: inline-flex !important; align-items: center; gap: 6px; margin-right: 14px; text-transform: none !important; font-size: 14px !important; font-weight: 400 !important; letter-spacing: 0 !important; color: var(--texto) !important; }
+.resumen { background: var(--fondo); border-radius: 8px; padding: 10px 14px; color: var(--texto2); margin: 6px 0 10px; }
+.xp { display: grid; grid-template-columns: 3fr 2fr; gap: 22px; align-items: start; }
+.caja-precio { margin-top: 18px; padding: 16px 18px; background: var(--fondo); border-radius: 10px; }
+.precio { font-size: 38px; font-weight: 700; color: var(--azul-osc); letter-spacing: -0.02em; }
+.intervalo { font-weight: 500; }
+.pie { color: var(--tenue); font-size: 13px; padding: 16px 0 30px; }
+@media (max-width: 900px) {
+  .rejilla-2, .xp, .hallazgos { grid-template-columns: 1fr; }
+  .fila-kpi { grid-template-columns: 1fr 1fr; }
+  .cabecera h1 { font-size: 26px; }
+}

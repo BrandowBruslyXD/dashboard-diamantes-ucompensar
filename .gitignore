@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+dash.log
+.DS_Store
+informe/*.aux
+informe/*.log

@@ -1,0 +1,8 @@
+dash==2.18.2
+plotly==5.24.1
+pandas==2.2.3
+numpy==2.1.3
+scikit-learn==1.5.2
+scipy==1.14.1
+joblib
+jupyter-server-proxy==4.4.0
