@@ -171,6 +171,27 @@ proyecto, y no vino de un algoritmo más sofisticado sino de entender la forma d
 problema. M3 es además interpretable: la elasticidad del precio respecto al peso
 es \textbf{1,88}, es decir, 1\,\% más de peso sube el precio un 1,88\,\%.
 
+La evidencia de esa decisión está en el propio catálogo (Figura~\ref{fig:loglog}).
+En escala lineal, la nube de precio frente a peso se abre como un embudo y se
+curva hacia arriba: una recta no puede seguirla, y el error crece con el
+precio. En escala logarítmica, la misma nube se vuelve una banda recta de
+ancho constante, justo lo que supone una regresión lineal. Dentro de la banda
+las capas de pureza quedan ordenadas: a igual peso, mejor pureza es más cara.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.49\textwidth}\centering
+\includegraphics[width=\textwidth]{figuras/explorar-lineal}\\[-2pt]
+{\small (a) Escala lineal: embudo y curvatura}
+\end{minipage}\hfill
+\begin{minipage}{0.49\textwidth}\centering
+\includegraphics[width=\textwidth]{figuras/explorar-log}\\[-2pt]
+{\small (b) Escala logarítmica: banda recta}
+\end{minipage}
+\caption{Precio frente a peso coloreado por pureza (pestaña 2 del dashboard, con el conmutador de escala). La forma de la nube justifica la transformación log-log de M3.}
+\label{fig:loglog}
+\end{figure}
+
 \textbf{M4 y M5.} Se tratan en la sección~\ref{sec:hiper}: son la
 experimentación con hiperparámetros y la regularización.
 
@@ -242,6 +263,12 @@ característica. Por eso la limpieza se aplica antes de la partición en todos l
 modelos. El volumen resultó casi redundante con el peso, porque la densidad del
 diamante es constante, así que M3 no lo incluye.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/xp-calidad}
+\caption{Experimento de calidad de datos (pestaña 4). Imputar los ceros con la mediana hunde el $R^2$ por debajo del modelo base; eliminarlos lo recupera. Las diferencias están en la cuarta cifra decimal, por eso se dibujan como puntos y no como barras con el eje truncado.}
+\end{figure}
+
 \subsection{¿Conseguir más datos ayudaría?}
 
 Reentrené M3 y M5 con fracciones crecientes del entrenamiento (del 2\,\% al
@@ -269,6 +296,15 @@ Para decidir si el modelo es fiable no basta un $R^2$ alto. Revisé tres cosas:
 \item \textbf{Generalización.} La brecha entre entrenamiento y prueba es de
 0,0047 en $R^2$, y el gráfico de predicho frente a real (pestaña 4) sigue la
 diagonal en todo el rango de precios, sin la curva ni el embudo de M1.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/residuos-m3}\\[2pt]
+{\small (a) M3, log-lineal: $R^2$ 0,9612 y MAPE 10,4\,\%}\\[6pt]
+\includegraphics[width=\textwidth]{figuras/residuos-m5}\\[2pt]
+{\small (b) M5, gradient boosting: $R^2$ 0,9816 y MAPE 6,5\,\%}
+\caption{Precio predicho frente a real en los 16.176 diamantes de prueba, en escala logarítmica (pestaña 4). Ambos siguen la diagonal, pero M3 conserva un sesgo leve: según el tramo de precio predicho, su residuo mediano va de $-6{,}1$\,\% a $+4{,}1$\,\%. M5 lo reduce a menos de $\pm 1$\,\% y estrecha la nube, sobre todo en las piedras baratas: en el tercio de menor precio, el error típico baja de 12,2\,\% a 5,7\,\%.}
+\end{figure}
 \item \textbf{Incertidumbre honesta.} El tasador da un intervalo del 80\,\% en
 lugar de un número suelto. Calibré el intervalo con los residuos \emph{fuera de
 pliegue} del entrenamiento (\texttt{cross\_val\_predict}) y medí su cobertura en
@@ -283,11 +319,36 @@ que J}, aunque en bruto D promedie 3.168 USD y J 5.324 USD (los J pesan en
 promedio 1,16 quilates y los D 0,66).
 \end{enumerate}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{figuras/efectos}
+\caption{Prima que paga el mercado por cada nivel frente al peor de su atributo, a igual peso (coeficientes de M3, pestaña 3). Los efectos son monótonos dentro de cada atributo, y la pureza domina: IF vale un 208\,\% más que I1, mientras que el mejor corte solo suma un 18\,\%.}
+\end{figure}
+
+La Figura~\ref{fig:banda} comprueba la paradoja sin ningún modelo. Al comparar D
+y J solo entre piedras de 0,3 a 0,5 quilates (pesos medios de 0,37 en ambos
+colores), la distribución de D queda claramente a la derecha: D cuesta en
+promedio 309 USD más, la misma cifra que obtuvo el contraste de hipótesis de la
+actividad 4.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/comprobar-banda}
+\caption{Comparación interactiva de colores dentro de una banda de peso (pestaña 3). Con el peso controlado, el orden se endereza: D es más caro que J.}
+\label{fig:banda}
+\end{figure}
+
 Con esta evidencia doy el modelo por fiable para su propósito: una primera
 tasación automática con $\pm 10$\,\% de incertidumbre, que un tasador humano
 revisa solo cuando el precio de lista se sale del intervalo.
 
 \section{El dashboard}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/estructura}
+\caption{Cabecera y navegación del dashboard: cinco pestañas que siguen el hilo del informe, de la historia al tasador.}
+\end{figure}
 
 \subsection{Decisiones de diseño}
 
@@ -322,6 +383,20 @@ aleatoria. El panel lo avisa en su resumen.
 \includegraphics[width=\textwidth]{figuras/kpis}\\[4pt]
 \includegraphics[width=0.62\textwidth]{figuras/evolucion}
 \caption{Pestaña 1: indicadores y evolución del error en cada iteración.}
+\end{figure}
+
+Para un público que no es de joyería ni de estadística, la pestaña 1 cierra con
+una guía de lectura (Figura~\ref{fig:guia}). Presenta las tres escalas
+gemológicas como bandas ordenadas, con la misma rampa de azules que usan los
+gráficos, y define las métricas. También aclara una confusión que detectó la
+revisión de diseño: el $R^2$ de la pestaña 4 ($\approx$ 0,99) se mide sobre
+log(precio), y el $R^2$ en dólares es 0,982.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figuras/guia}
+\caption{Guía de escalas y métricas (pestaña 1).}
+\label{fig:guia}
 \end{figure}
 
 \subsection{Interactividad}
@@ -373,6 +448,40 @@ el catálogo.
 \caption{Pestaña 5: detector de oportunidades.}
 \end{figure}
 
+\subsection{Estados vacíos y diseño adaptable}
+
+Un filtro puede dejar el gráfico sin datos, por ejemplo al quitar todos los
+cortes o al elegir una banda de peso sin diamantes de algún color. En ese caso
+el dashboard no dibuja ejes rotos: muestra un mensaje que dice qué pasó y cómo
+salir (Figura~\ref{fig:vacio}). Los rangos de los deslizadores no se pueden
+cruzar, y la comparación de colores pide dos colores distintos.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.62\textwidth}\centering
+\includegraphics[width=\textwidth]{figuras/vacio-filtros}
+\end{minipage}\hfill
+\begin{minipage}{0.34\textwidth}\centering
+\includegraphics[width=\textwidth]{figuras/vacio-grafico}
+\end{minipage}
+\caption{Estado vacío en la pestaña 2: el resumen y el gráfico explican cómo recuperar datos.}
+\label{fig:vacio}
+\end{figure}
+
+El dashboard también se usa en el celular (Figura~\ref{fig:movil}). Por debajo de
+900 píxeles las columnas se apilan, las pestañas se desplazan en horizontal y la
+tabla de oportunidades tiene su propio scroll, así que la página nunca se sale
+de la pantalla.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.31\textwidth]{figuras/movil-1}\hfill
+\includegraphics[width=0.31\textwidth]{figuras/movil-3}\hfill
+\includegraphics[width=0.31\textwidth]{figuras/movil-5}
+\caption{El dashboard a 390 píxeles de ancho: la historia, la paradoja del color y el certificado de tasación.}
+\label{fig:movil}
+\end{figure}
+
 \subsection{Pruebas}
 
 \begin{itemize}[leftmargin=1.2cm,itemsep=0.25em]
@@ -388,7 +497,7 @@ otra máquina con las versiones fijadas en \texttt{requirements.txt}.
 \item \textbf{Verificación de cifras.} El script \texttt{verificar.py} recalcula
 desde el CSV crudo y los modelos guardados cada cifra citada en este informe y en
 el dashboard; M0 y M1 los recalcula con NumPy puro, sin scikit-learn. Resultado:
-\textbf{40 comprobaciones, 0 incorrectas}. En su primera ejecución detectó una
+\textbf{45 comprobaciones, 0 incorrectas}. En su primera ejecución detectó una
 cifra mal transcrita (el MAPE de M2), que se corrigió.
 \item \textbf{Revisión visual.} La revisión de las capturas encontró problemas que
 se corrigieron: un eje truncado que exageraba diferencias mínimas (se cambió por

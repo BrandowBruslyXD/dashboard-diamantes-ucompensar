@@ -107,5 +107,19 @@ afirma('M5 con 18.872 filas: MAPE (%)', 6.61, cu[(cu.modelo == 'M5') & (cu.n_ent
 pr = pd.read_csv(RES / 'predicciones_prueba.csv')
 afirma('diamantes de prueba ≥20 % bajo su valor', 255, (pr.desvio_pct <= -20).sum(), 0)
 
+# --- pies de figura del informe (predicho frente a real)
+pr['tercil'] = pd.qcut(pr.price, 3, labels=['bajo', 'medio', 'alto'])
+for col, escrito in (('pred_m3', 12.2), ('pred_final', 5.7)):
+    e = (pr.price / pr[col] - 1).abs()
+    afirma(f'{col}: MAPE en el tercio de menor precio (%)', escrito, e[pr.tercil == 'bajo'].mean() * 100, 0.05)
+for col, lo, hi in (('pred_m3', -6.1, 4.1), ('pred_final', -1.0, 1.0)):
+    med = np.log(pr.price / pr[col]).groupby(pd.qcut(pr[col], 10), observed=True).median()
+    rango = (np.exp(med) - 1) * 100
+    if col == 'pred_m3':
+        afirma('M3: residuo mediano mínimo por decil (%)', lo, rango.min(), 0.05)
+        afirma('M3: residuo mediano máximo por decil (%)', hi, rango.max(), 0.05)
+    else:
+        afirma('M5: |residuo mediano| máximo por decil < 1 % (1 = sí)', 1, float(rango.abs().max() < 1), 0)
+
 print(f'\n{ok} OK, {mal} incorrectas')
 sys.exit(1 if mal else 0)

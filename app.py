@@ -4,6 +4,7 @@
 # En Binder:  binder/start lo lanza detrás de jupyter-server-proxy (DASH_PREFIX).
 import json
 import os
+import textwrap
 from pathlib import Path
 
 import joblib
@@ -87,7 +88,7 @@ def estilo(fig, alto=380, leyenda=True):
 
 def vacia(texto, alto=380):
     fig = go.Figure()
-    fig.add_annotation(text=texto, x=0.5, y=0.5, xref='paper', yref='paper', showarrow=False,
+    fig.add_annotation(text='<br>'.join(textwrap.wrap(texto, 44)), x=0.5, y=0.5, xref='paper', yref='paper', showarrow=False,
                        font=dict(size=15, color=C['texto2']))
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
@@ -622,11 +623,11 @@ def tasador(peso, cut, color, clarity):
         html.Dl([
             fila('Peso', f'{num(peso, 2)} q'),
             fila('Corte', cut), fila('Color', color), fila('Pureza', clarity),
-            fila('Medidas estimadas', f'{num(base["x"], 2)} × {num(base["y"], 2)} × {num(base["z"], 2)} mm'),
+            fila('Medidas*', f'{num(base["x"], 1)} × {num(base["y"], 1)} × {num(base["z"], 1)} mm'),
         ], className='cert-datos'),
         html.Div([html.Div('Valor estimado', className='cert-etiqueta'), html.Div(usd(p), className='precio')], className='cert-valor'),
         html.Div(f'Entre {usd(lo)} y {usd(hi)} en 8 de cada 10 casos', className='intervalo'),
-        html.Div(f'Contraste con el modelo interpretable M3: {usd(p3)}', className='kpi-nota'),
+        html.Div(f'Contraste con el modelo interpretable M3: {usd(p3)} · *medidas estimadas a partir del peso', className='kpi-nota'),
     ], className='certificado')
     # sensibilidad: mover un atributo a la vez
     filas, etiquetas, grupos = [], [], []
