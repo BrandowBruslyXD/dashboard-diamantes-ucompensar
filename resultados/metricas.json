@@ -72,10 +72,10 @@
   "mejor_max_depth": 6,
   "elasticidad_peso": 1.8831,
   "intervalo_80_log": [
-    -0.1026,
-    0.1013
+    -0.1042,
+    0.1008
   ],
-  "cobertura_80_prueba": 0.8,
+  "cobertura_80_prueba": 0.8014,
   "calidad_datos": [
     {
       "experimento": "M3 (sin volumen)",
@@ -96,5 +96,5 @@
       "mape": 0.1043
     }
   ],
-  "segundos": 192.7
+  "segundos": 186.4
 }

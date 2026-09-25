@@ -13,7 +13,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
-from sklearn.model_selection import KFold, cross_val_score, train_test_split
+from sklearn.model_selection import KFold, cross_val_predict, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures, StandardScaler
 
@@ -239,8 +239,11 @@ modelo_final = modelo_m5
 pred = prueba[['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z', 'price']].copy()
 pred['pred_m3'] = np.exp(modelo_m3.predict(prueba[cols_m3])).round(2)
 pred['pred_final'] = np.exp(modelo_final.predict(prueba[cols_gb])).round(2)
+# Intervalo del 80 %: se calibra con residuos fuera de pliegue del ENTRENAMIENTO
+# y su cobertura se mide en PRUEBA (si se calibrara en prueba, la cobertura sería 0,80 por construcción).
+oof = cross_val_predict(pipe_gb(mejor_prof, iters=300), entreno[cols_gb], entreno['log_price'], cv=kf)
+q10, q90 = np.quantile(entreno['log_price'] - oof, [0.1, 0.9])
 resid_log = np.log(pred['price']) - np.log(pred['pred_final'])
-q10, q90 = np.quantile(resid_log, [0.1, 0.9])
 pred['desvio_pct'] = ((pred['price'] / pred['pred_final'] - 1) * 100).round(2)
 pred.to_csv(SALIDA / 'predicciones_prueba.csv', index=False)
 
